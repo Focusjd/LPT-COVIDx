@@ -20,6 +20,9 @@ from architect_ts import Architect
 from teacher import *
 from teacher_update import *
 
+from torch.utils.tensorboard import SummaryWriter   
+
+
 
 parser = argparse.ArgumentParser("LPT-covidx")
 parser.add_argument('--data', type=str, default='../data',
@@ -78,6 +81,8 @@ args = parser.parse_args()
 
 args.save = 'search-{}-{}'.format(args.save, time.strftime("%Y%m%d-%H%M%S"))
 utils.create_exp_dir(args.save, scripts_to_save=glob.glob('*.py'))
+writer = SummaryWriter(args.save)
+
 
 log_format = '%(asctime)s %(message)s'
 logging.basicConfig(stream=sys.stdout, level=logging.INFO,
@@ -200,11 +205,19 @@ def main():
         teacher_updater,
         teacher_w, teacher_h, teacher_v)
     logging.info('train_acc %f', train_acc)
+
+    writer.add_scalar('Accuracy/train', train_acc, epoch)
+    writer.add_scalar('Loss/train', train_obj, epoch)
+
+
     scheduler.step()
     scheduler_w.step()
     scheduler_h.step()
     # validation
     valid_acc, valid_obj = infer(valid_queue, model, criterion)
+    writer.add_scalar('Accuracy/validate', valid_acc, epoch)
+    writer.add_scalar('Loss/validate', valid_obj, epoch)
+
     # external_acc, external_obj = infer(external_queue, model, criterion)
     logging.info('valid_acc %f', valid_acc)
     # logging.info('external_acc %f', external_acc)
@@ -265,6 +278,7 @@ def train(train_queue, valid_queue, external_queue,
     right_loss = args.weight_gamma * \
         binary_weight_external[:, 1] * right_loss
     loss = left_loss + right_loss.mean()
+
     loss.backward()
 
     optimizer_w.step()
