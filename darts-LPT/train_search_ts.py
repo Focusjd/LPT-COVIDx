@@ -22,8 +22,6 @@ from teacher_update import *
 
 from torch.utils.tensorboard import SummaryWriter   
 
-
-
 parser = argparse.ArgumentParser("LPT-covidx")
 parser.add_argument('--data', type=str, default='../data',
                     help='location of the data corpus')
@@ -136,13 +134,13 @@ def main():
   if args.is_parallel:
     gpus = [int(i) for i in args.gpu.split(',')]
     model = nn.parallel.DataParallel(
-        model, device_ids=gpus, output_device=gpus[0])
+        model, device_ids=gpus[1:], output_device=gpus[0])
     teacher_w = nn.parallel.DataParallel(
-        teacher_w, device_ids=gpus, output_device=gpus[0])
+        teacher_w, device_ids=gpus[1:], output_device=gpus[0])
     teacher_h = nn.parallel.DataParallel(
-        teacher_h, device_ids=gpus, output_device=gpus[0])
+        teacher_h, device_ids=gpus[1:], output_device=gpus[0])
     teacher_v = nn.parallel.DataParallel(
-        teacher_v, device_ids=gpus, output_device=gpus[0])
+        teacher_v, device_ids=gpus[1:], output_device=gpus[0])
     model = model.module
     teacher_w = teacher_w.module
     teacher_h = teacher_h.module
@@ -170,10 +168,10 @@ def main():
   train_data = COVIDxDataset(mode='train', data_path=args.data)
   valid_data = COVIDxDataset(mode='validate', data_path=args.data)
 
-  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=False, num_workers=4)
-  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=4)
+  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=False, num_workers=0)
+  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
-  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=4)
+  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=0)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
       optimizer, float(args.epochs), eta_min=args.learning_rate_min)

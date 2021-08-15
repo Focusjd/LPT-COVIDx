@@ -1,11 +1,12 @@
 name: skillearn
 dependencies:
+  - python=3.6
   - cudatoolkit
-  - pytorch=1.3.0
+  - pytorch
   - torchvision
-  - pydicom
-  - tensorboard=1.14.0
+  - tensorboard
   - tqdm
   - pandas
   - opencv
   - matplotlib
+  - numpy
