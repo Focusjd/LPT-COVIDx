@@ -168,10 +168,10 @@ def main():
   train_data = COVIDxDataset(mode='train', data_path=args.data)
   valid_data = COVIDxDataset(mode='validate', data_path=args.data)
 
-  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=False, num_workers=0)
-  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=0)
+  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=False, num_workers=2)
+  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=2)
 
-  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=0)
+  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=2)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
       optimizer, float(args.epochs), eta_min=args.learning_rate_min)
