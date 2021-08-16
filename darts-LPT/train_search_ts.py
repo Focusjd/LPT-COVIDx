@@ -139,7 +139,8 @@ def main():
     teacher_h = nn.Linear(512, COVID19_CLASSES)
     teacher_h = nn.DataParallel(teacher_h).cuda()
 
-  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
+  # teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
+  teacher_v = nn.Linear(512, 2)
   teacher_v = nn.DataParallel(teacher_v).cuda()
   
   if args.is_parallel:
