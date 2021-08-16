@@ -134,13 +134,13 @@ def main():
   if args.is_parallel:
     gpus = [int(i) for i in args.gpu.split(',')]
     model = nn.parallel.DataParallel(
-        model, device_ids=gpus[1:], output_device=gpus[0])
+        model, device_ids=gpus, output_device=gpus[0])
     teacher_w = nn.parallel.DataParallel(
-        teacher_w, device_ids=gpus[1:], output_device=gpus[0])
+        teacher_w, device_ids=gpus, output_device=gpus[0])
     teacher_h = nn.parallel.DataParallel(
-        teacher_h, device_ids=gpus[1:], output_device=gpus[0])
+        teacher_h, device_ids=gpus, output_device=gpus[0])
     teacher_v = nn.parallel.DataParallel(
-        teacher_v, device_ids=gpus[1:], output_device=gpus[0])
+        teacher_v, device_ids=gpus, output_device=gpus[0])
     model = model.module
     teacher_w = teacher_w.module
     teacher_h = teacher_h.module

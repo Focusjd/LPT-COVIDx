@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
-screen -S exp
 nvidia-smi
 conda env create -f environment.yml
 source activate skillearn
-pip install Pillow
-pip install numpy
-mkdir readytorun
-python darts-LPT/train_search_ts.py --batch_size 6 --gpu 0,1,2,3 --is_parallel 1
+cd /dianjiao-pvc/LPT-COVIDx/darts-LPT
+python train_search_ts.py --batch_size 4 --gpu 0,1,2,3 --is_parallel 1 --layers 6
