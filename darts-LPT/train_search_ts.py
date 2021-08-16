@@ -94,6 +94,8 @@ CIFAR_CLASSES = 10
 CIFAR100_CLASSES = 100
 COVID19_CLASSES = 3
 
+gpus = [int(i) for i in args.gpu.split(',')]
+
 def main():
   if not torch.cuda.is_available():
     logging.info('no gpu device available')
@@ -113,35 +115,35 @@ def main():
   logging.info("args = %s", args)
 
   criterion = nn.CrossEntropyLoss()
-  criterion = criterion
+  criterion = criterion.cuda('cuda:'+str(gpus))
 
   model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
 
-  model = nn.DataParallel(model)
+  model = nn.DataParallel(model).cuda('cuda:'+str(gpus))
   if args.teacher_arch == '18':
     teacher_w = resnet18()
-    teacher_w = nn.DataParallel(teacher_w)
+    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(gpus))
   elif args.teacher_arch == '34':
     teacher_w = resnet34()
-    teacher_w = nn.DataParallel(teacher_w)
+    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(gpus))
   elif args.teacher_arch == '50':
     teacher_w = resnet50()
-    teacher_w = nn.DataParallel(teacher_w)
+    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(gpus))
   elif args.teacher_arch == '101':
     teacher_w = resnet101()
-    teacher_w = nn.DataParallel(teacher_w)
+    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(gpus))
 
 
   if args.is_cifar100:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES)
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda('cuda:'+str(gpus))
   else:
     # 512 * teacher_w.block.expansion = 512
     teacher_h = nn.Linear(512, COVID19_CLASSES)
-    teacher_h = nn.DataParallel(teacher_h)
+    teacher_h = nn.DataParallel(teacher_h).cuda('cuda:'+str(gpus))
 
   # teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
   teacher_v = nn.Linear(512, 2)
-  teacher_v = nn.DataParallel(teacher_v)
+  teacher_v = nn.DataParallel(teacher_v).cuda('cuda:'+str(gpus))
   
   if args.is_parallel:
     # gpus = [int(i) for i in args.gpu.split(',')]
@@ -251,17 +253,17 @@ def train(train_queue, valid_queue, external_queue,
     model.train()
     n = input.size(0)
 
-    input = input
-    target = target.cuda(non_blocking=True)
+    input = input.cuda('cuda:'+str(gpus))
+    target = target.cuda('cuda:'+str(gpus))
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = input_search
-    target_search = target_search.cuda(non_blocking=True)
+    input_search = input_search.cuda('cuda:'+str(gpus))
+    target_search = target_search.cuda('cuda:'+str(gpus))
 
     input_external, target_external = next(iter(external_queue))
-    input_external = input_external
-    target_external = target_external.cuda(non_blocking=True)
+    input_external = input_external.cuda('cuda:'+str(gpus))
+    target_external = target_external.cuda('cuda:'+str(gpus))
 
     architect.step(input, target, input_external, target_external,
                    lr, optimizer, teacher_w, teacher_v, unrolled=args.unrolled)
@@ -323,8 +325,8 @@ def infer(valid_queue, model, criterion):
   model.eval()
   with torch.no_grad():
     for step, (input, target) in enumerate(valid_queue):
-        input = input
-        target = target.cuda(non_blocking=True)
+        input = input.cuda('cuda:'+str(gpus))
+        target = target.cuda('cuda:'+str(gpus))
 
         logits = model(input)
         loss = criterion(logits, target)
