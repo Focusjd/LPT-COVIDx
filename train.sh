@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+screen -S exp
 nvidia-smi
 conda env create -f environment.yml
 source activate skillearn
