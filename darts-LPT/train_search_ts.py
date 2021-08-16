@@ -297,6 +297,7 @@ def train(train_queue, valid_queue, external_queue,
     # update the model parameter.
     optimizer.zero_grad()
     logits = model(input)
+    print("logits device: ", logits.device)
     loss = criterion(logits, target)
 
     loss.backward()
