@@ -22,6 +22,8 @@ from teacher_update import *
 
 from torch.utils.tensorboard import SummaryWriter   
 
+
+
 parser = argparse.ArgumentParser("LPT-covidx")
 parser.add_argument('--data', type=str, default='../data',
                     help='location of the data corpus')
@@ -94,8 +96,6 @@ CIFAR_CLASSES = 10
 CIFAR100_CLASSES = 100
 COVID19_CLASSES = 3
 
-gpus = [int(i) for i in args.gpu.split(',')]
-
 def main():
   if not torch.cuda.is_available():
     logging.info('no gpu device available')
@@ -103,9 +103,8 @@ def main():
 
   np.random.seed(args.seed)
   if not args.is_parallel:
-    # torch.cuda.set_device('cuda:'+str(args.gpu))
+    torch.cuda.set_device(int(args.gpu))
     logging.info('gpu device = %d' % int(args.gpu))
-    print('device numer: ', torch.cuda.device_count())
   else:
     logging.info('gpu device = %s' % args.gpu)
   cudnn.benchmark = True
@@ -115,46 +114,35 @@ def main():
   logging.info("args = %s", args)
 
   criterion = nn.CrossEntropyLoss()
-  criterion = criterion.cuda('cuda:'+str(args.gpu))
+  criterion = criterion.cuda()
 
   model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
 
-  model = nn.DataParallel(model).cuda('cuda:'+str(args.gpu))
+  model = model.cuda()
   if args.teacher_arch == '18':
-    teacher_w = resnet18()
-    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(args.gpu))
+    teacher_w = resnet18().cuda()
   elif args.teacher_arch == '34':
-    teacher_w = resnet34()
-    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(args.gpu))
+    teacher_w = resnet34().cuda()
   elif args.teacher_arch == '50':
-    teacher_w = resnet50()
-    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(args.gpu))
+    teacher_w = resnet50().cuda()
   elif args.teacher_arch == '101':
-    teacher_w = resnet101()
-    teacher_w = nn.DataParallel(teacher_w).cuda('cuda:'+str(args.gpu))
-
+    teacher_w = resnet101().cuda()
 
   if args.is_cifar100:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda('cuda:'+str(args.gpu))
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda()
   else:
-    # 512 * teacher_w.block.expansion = 512
-    teacher_h = nn.Linear(512, COVID19_CLASSES)
-    teacher_h = nn.DataParallel(teacher_h).cuda('cuda:'+str(args.gpu))
-
-  # teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
-  teacher_v = nn.Linear(512, 2)
-  teacher_v = nn.DataParallel(teacher_v).cuda('cuda:'+str(args.gpu))
-  
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, COVID19_CLASSES).cuda()
+  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2).cuda()
   if args.is_parallel:
-    # gpus = [int(i) for i in args.gpu.split(',')]
-    # model = nn.DataParallel(
-    #     model, device_ids=gpus)
-    # teacher_w = nn.DataParallel(
-    #     teacher_w, device_ids=gpus)
-    # teacher_h = nn.DataParallel(
-    #     teacher_h, device_ids=gpus)
-    # teacher_v = nn.DataParallel(
-    #     teacher_v, device_ids=gpus)
+    gpus = [int(i) for i in args.gpu.split(',')]
+    model = nn.parallel.DataParallel(
+        model, device_ids=gpus, output_device=gpus[0])
+    teacher_w = nn.parallel.DataParallel(
+        teacher_w, device_ids=gpus, output_device=gpus[0])
+    teacher_h = nn.parallel.DataParallel(
+        teacher_h, device_ids=gpus, output_device=gpus[0])
+    teacher_v = nn.parallel.DataParallel(
+        teacher_v, device_ids=gpus, output_device=gpus[0])
     model = model.module
     teacher_w = teacher_w.module
     teacher_h = teacher_h.module
@@ -182,10 +170,10 @@ def main():
   train_data = COVIDxDataset(mode='train', data_path=args.data)
   valid_data = COVIDxDataset(mode='validate', data_path=args.data)
 
-  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=False, num_workers=2)
-  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=2)
+  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=4)
+  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
-  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=False, num_workers=2)
+  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=4)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
       optimizer, float(args.epochs), eta_min=args.learning_rate_min)
@@ -253,17 +241,17 @@ def train(train_queue, valid_queue, external_queue,
     model.train()
     n = input.size(0)
 
-    input = input.cuda('cuda:'+str(args.gpu))
-    target = target.cuda('cuda:'+str(args.gpu))
+    input = input.cuda()
+    target = target.cuda(non_blocking=True)
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = input_search.cuda('cuda:'+str(args.gpu))
-    target_search = target_search.cuda('cuda:'+str(args.gpu))
+    input_search = input_search.cuda()
+    target_search = target_search.cuda(non_blocking=True)
 
     input_external, target_external = next(iter(external_queue))
-    input_external = input_external.cuda('cuda:'+str(args.gpu))
-    target_external = target_external.cuda('cuda:'+str(args.gpu))
+    input_external = input_external.cuda()
+    target_external = target_external.cuda(non_blocking=True)
 
     architect.step(input, target, input_external, target_external,
                    lr, optimizer, teacher_w, teacher_v, unrolled=args.unrolled)
@@ -324,8 +312,8 @@ def infer(valid_queue, model, criterion):
   model.eval()
   with torch.no_grad():
     for step, (input, target) in enumerate(valid_queue):
-        input = input.cuda('cuda:'+str(args.gpu))
-        target = target.cuda('cuda:'+str(args.gpu))
+        input = input.cuda()
+        target = target.cuda(non_blocking=True)
 
         logits = model(input)
         loss = criterion(logits, target)
@@ -344,4 +332,3 @@ def infer(valid_queue, model, criterion):
 
 if __name__ == '__main__':
   main()
-
