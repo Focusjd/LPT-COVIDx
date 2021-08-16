@@ -42,7 +42,7 @@ parser.add_argument('--epochs', type=int, default=50,
                     help='num of training epochs')
 parser.add_argument('--init_channels', type=int,
                     default=6, help='num of init channels')
-parser.add_argument('--layers', type=int, default=8,
+parser.add_argument('--layers', type=int, default=6,
                     help='total number of layers')
 parser.add_argument('--model_path', type=str,
                     default='saved_models', help='path to save the model')
@@ -170,10 +170,10 @@ def main():
   train_data = COVIDxDataset(mode='train', data_path=args.data)
   valid_data = COVIDxDataset(mode='validate', data_path=args.data)
 
-  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=4)
-  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=4)
+  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=2)
+  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=2)
 
-  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=4)
+  external_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=2)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
       optimizer, float(args.epochs), eta_min=args.learning_rate_min)
