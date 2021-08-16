@@ -101,7 +101,7 @@ def main():
 
   np.random.seed(args.seed)
   if not args.is_parallel:
-    torch.cuda.set_device(int(args.gpu))
+    torch.cuda.set_device('cuda:'+str(args.gpu))
     logging.info('gpu device = %d' % int(args.gpu))
   else:
     logging.info('gpu device = %s' % args.gpu)
@@ -133,13 +133,13 @@ def main():
   teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2).cuda()
   if args.is_parallel:
     gpus = [int(i) for i in args.gpu.split(',')]
-    model = nn.parallel.DataParallel(
+    model = nn.DataParallel(
         model, device_ids=gpus)
-    teacher_w = nn.parallel.DataParallel(
+    teacher_w = nn.DataParallel(
         teacher_w, device_ids=gpus)
-    teacher_h = nn.parallel.DataParallel(
+    teacher_h = nn.DataParallel(
         teacher_h, device_ids=gpus)
-    teacher_v = nn.parallel.DataParallel(
+    teacher_v = nn.DataParallel(
         teacher_v, device_ids=gpus)
     model = model.module
     teacher_w = teacher_w.module
