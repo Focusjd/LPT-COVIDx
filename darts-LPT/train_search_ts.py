@@ -113,35 +113,35 @@ def main():
   logging.info("args = %s", args)
 
   criterion = nn.CrossEntropyLoss()
-  criterion = criterion.cuda()
+  criterion = criterion
 
   model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
 
-  model = nn.DataParallel(model).cuda()
+  model = nn.DataParallel(model)
   if args.teacher_arch == '18':
     teacher_w = resnet18()
-    teacher_w = nn.DataParallel(teacher_w).cuda()
+    teacher_w = nn.DataParallel(teacher_w)
   elif args.teacher_arch == '34':
     teacher_w = resnet34()
-    teacher_w = nn.DataParallel(teacher_w).cuda()
+    teacher_w = nn.DataParallel(teacher_w)
   elif args.teacher_arch == '50':
     teacher_w = resnet50()
-    teacher_w = nn.DataParallel(teacher_w).cuda()
+    teacher_w = nn.DataParallel(teacher_w)
   elif args.teacher_arch == '101':
     teacher_w = resnet101()
-    teacher_w = nn.DataParallel(teacher_w).cuda()
+    teacher_w = nn.DataParallel(teacher_w)
 
 
   if args.is_cifar100:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda()
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES)
   else:
     # 512 * teacher_w.block.expansion = 512
     teacher_h = nn.Linear(512, COVID19_CLASSES)
-    teacher_h = nn.DataParallel(teacher_h).cuda()
+    teacher_h = nn.DataParallel(teacher_h)
 
   # teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
   teacher_v = nn.Linear(512, 2)
-  teacher_v = nn.DataParallel(teacher_v).cuda()
+  teacher_v = nn.DataParallel(teacher_v)
   
   if args.is_parallel:
     # gpus = [int(i) for i in args.gpu.split(',')]
@@ -251,16 +251,16 @@ def train(train_queue, valid_queue, external_queue,
     model.train()
     n = input.size(0)
 
-    input = input.cuda()
+    input = input
     target = target.cuda(non_blocking=True)
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    input_search = input_search.cuda()
+    input_search = input_search
     target_search = target_search.cuda(non_blocking=True)
 
     input_external, target_external = next(iter(external_queue))
-    input_external = input_external.cuda()
+    input_external = input_external
     target_external = target_external.cuda(non_blocking=True)
 
     architect.step(input, target, input_external, target_external,
@@ -323,7 +323,7 @@ def infer(valid_queue, model, criterion):
   model.eval()
   with torch.no_grad():
     for step, (input, target) in enumerate(valid_queue):
-        input = input.cuda()
+        input = input
         target = target.cuda(non_blocking=True)
 
         logits = model(input)
