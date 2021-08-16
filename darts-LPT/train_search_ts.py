@@ -100,11 +100,11 @@ def main():
     sys.exit(1)
 
   np.random.seed(args.seed)
-  # if not args.is_parallel:
-  #   torch.cuda.set_device(int(args.gpu))
-  #   logging.info('gpu device = %d' % int(args.gpu))
-  # else:
-  #   logging.info('gpu device = %s' % args.gpu)
+  if not args.is_parallel:
+    torch.cuda.set_device(int(args.gpu))
+    logging.info('gpu device = %d' % int(args.gpu))
+  else:
+    logging.info('gpu device = %s' % args.gpu)
   cudnn.benchmark = True
   torch.manual_seed(args.seed)
   cudnn.enabled = True
@@ -112,25 +112,25 @@ def main():
   logging.info("args = %s", args)
 
   criterion = nn.CrossEntropyLoss()
-  # criterion = criterion.cuda()
+  criterion = criterion.cuda()
 
   model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
 
-  # model = model.cuda()
+  model = model.cuda()
   if args.teacher_arch == '18':
-    teacher_w = resnet18()
+    teacher_w = resnet18().cuda()
   elif args.teacher_arch == '34':
-    teacher_w = resnet34()
+    teacher_w = resnet34().cuda()
   elif args.teacher_arch == '50':
-    teacher_w = resnet50()
+    teacher_w = resnet50().cuda()
   elif args.teacher_arch == '101':
-    teacher_w = resnet101()
+    teacher_w = resnet101().cuda()
 
   if args.is_cifar100:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES)
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda()
   else:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, COVID19_CLASSES)
-  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, COVID19_CLASSES).cuda()
+  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2).cuda()
   if args.is_parallel:
     gpus = [int(i) for i in args.gpu.split(',')]
     model = nn.parallel.DataParallel(
@@ -239,17 +239,17 @@ def train(train_queue, valid_queue, external_queue,
     model.train()
     n = input.size(0)
 
-    # input = input.cuda()
-    # target = target.cuda(non_blocking=True)
+    input = input.cuda()
+    target = target.cuda(non_blocking=True)
 
     # get a random minibatch from the search queue with replacement
     input_search, target_search = next(iter(valid_queue))
-    # input_search = input_search.cuda()
-    # target_search = target_search.cuda(non_blocking=True)
+    input_search = input_search.cuda()
+    target_search = target_search.cuda(non_blocking=True)
 
     input_external, target_external = next(iter(external_queue))
-    # input_external = input_external.cuda()
-    # target_external = target_external.cuda(non_blocking=True)
+    input_external = input_external.cuda()
+    target_external = target_external.cuda(non_blocking=True)
 
     architect.step(input, target, input_external, target_external,
                    lr, optimizer, teacher_w, teacher_v, unrolled=args.unrolled)
@@ -310,8 +310,8 @@ def infer(valid_queue, model, criterion):
   model.eval()
   with torch.no_grad():
     for step, (input, target) in enumerate(valid_queue):
-        # input = input.cuda()
-        # target = target.cuda(non_blocking=True)
+        input = input.cuda()
+        target = target.cuda(non_blocking=True)
 
         logits = model(input)
         loss = criterion(logits, target)
