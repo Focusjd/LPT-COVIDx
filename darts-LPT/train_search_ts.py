@@ -103,6 +103,7 @@ def main():
   if not args.is_parallel:
     torch.cuda.set_device('cuda:'+str(args.gpu))
     logging.info('gpu device = %d' % int(args.gpu))
+    print('device numer: ', torch.cuda.device_count())
   else:
     logging.info('gpu device = %s' % args.gpu)
   cudnn.benchmark = True
@@ -116,31 +117,40 @@ def main():
 
   model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
 
-  model = model.cuda()
+  model = nn.DataParallel(model).cuda()
   if args.teacher_arch == '18':
-    teacher_w = resnet18().cuda()
+    teacher_w = resnet18()
+    teacher_w = nn.DataParallel(teacher_w).cuda()
   elif args.teacher_arch == '34':
-    teacher_w = resnet34().cuda()
+    teacher_w = resnet34()
+    teacher_w = nn.DataParallel(teacher_w).cuda()
   elif args.teacher_arch == '50':
-    teacher_w = resnet50().cuda()
+    teacher_w = resnet50()
+    teacher_w = nn.DataParallel(teacher_w).cuda()
   elif args.teacher_arch == '101':
-    teacher_w = resnet101().cuda()
+    teacher_w = resnet101()
+    teacher_w = nn.DataParallel(teacher_w).cuda()
+
 
   if args.is_cifar100:
     teacher_h = nn.Linear(512 * teacher_w.block.expansion, CIFAR100_CLASSES).cuda()
   else:
-    teacher_h = nn.Linear(512 * teacher_w.block.expansion, COVID19_CLASSES).cuda()
-  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2).cuda()
+    teacher_h = nn.Linear(512 * teacher_w.block.expansion, COVID19_CLASSES)
+    teacher_h = nn.DataParallel(teacher_h).cuda()
+
+  teacher_v = nn.Linear(512 * teacher_w.block.expansion, 2)
+  teacher_v = nn.DataParallel(teacher_v).cuda()
+  
   if args.is_parallel:
-    gpus = [int(i) for i in args.gpu.split(',')]
-    model = nn.DataParallel(
-        model, device_ids=gpus)
-    teacher_w = nn.DataParallel(
-        teacher_w, device_ids=gpus)
-    teacher_h = nn.DataParallel(
-        teacher_h, device_ids=gpus)
-    teacher_v = nn.DataParallel(
-        teacher_v, device_ids=gpus)
+    # gpus = [int(i) for i in args.gpu.split(',')]
+    # model = nn.DataParallel(
+    #     model, device_ids=gpus)
+    # teacher_w = nn.DataParallel(
+    #     teacher_w, device_ids=gpus)
+    # teacher_h = nn.DataParallel(
+    #     teacher_h, device_ids=gpus)
+    # teacher_v = nn.DataParallel(
+    #     teacher_v, device_ids=gpus)
     model = model.module
     teacher_w = teacher_w.module
     teacher_h = teacher_h.module
