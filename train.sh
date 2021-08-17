@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 sleep infinity
-screen 
+screen -S exp
 bash
 nvidia-smi
 conda env create -f environment.yml
