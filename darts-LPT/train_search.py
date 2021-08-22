@@ -17,19 +17,21 @@ from torch.autograd import Variable
 from model_search import Network
 from architect import Architect
 
+from torch.utils.data import DataLoader
+from covidxdataset import COVIDxDataset
 
 parser = argparse.ArgumentParser("cifar")
 parser.add_argument('--data', type=str, default='../data', help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=64, help='batch size')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--learning_rate', type=float, default=0.025, help='init learning rate')
 parser.add_argument('--learning_rate_min', type=float, default=0.001, help='min learning rate')
 parser.add_argument('--momentum', type=float, default=0.9, help='momentum')
 parser.add_argument('--weight_decay', type=float, default=3e-4, help='weight decay')
 parser.add_argument('--report_freq', type=float, default=50, help='report frequency')
 parser.add_argument('--gpu', type=str, default='0', help='gpu device id')
-parser.add_argument('--epochs', type=int, default=50, help='num of training epochs')
-parser.add_argument('--init_channels', type=int, default=16, help='num of init channels')
-parser.add_argument('--layers', type=int, default=8, help='total number of layers')
+parser.add_argument('--epochs', type=int, default=30, help='num of training epochs')
+parser.add_argument('--init_channels', type=int, default=6, help='num of init channels')
+parser.add_argument('--layers', type=int, default=6, help='total number of layers')
 parser.add_argument('--model_path', type=str, default='saved_models', help='path to save the model')
 parser.add_argument('--cutout', action='store_true', default=False, help='use cutout')
 parser.add_argument('--cutout_length', type=int, default=16, help='cutout length')
@@ -38,7 +40,7 @@ parser.add_argument('--save', type=str, default='EXP', help='experiment name')
 parser.add_argument('--seed', type=int, default=2, help='random seed')
 parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--train_portion', type=float, default=0.5, help='portion of training data')
-parser.add_argument('--unrolled', action='store_true', default=False, help='use one-step unrolled validation loss')
+parser.add_argument('--unrolled', action='store_true', default=True, help='use one-step unrolled validation loss')
 parser.add_argument('--arch_learning_rate', type=float, default=3e-4, help='learning rate for arch encoding')
 parser.add_argument('--arch_weight_decay', type=float, default=1e-3, help='weight decay for arch encoding')
 parser.add_argument('--is_parallel', type=int, default=0)
@@ -58,6 +60,7 @@ logging.getLogger().addHandler(fh)
 
 CIFAR_CLASSES = 10
 CIFAR100_CLASSES = 100
+COVID19_CLASSES = 3
 
 
 def main():
@@ -82,7 +85,7 @@ def main():
   if args.is_cifar100:
     model = Network(args.init_channels, CIFAR100_CLASSES, args.layers, criterion)
   else:
-    model = Network(args.init_channels, CIFAR_CLASSES, args.layers, criterion)
+    model = Network(args.init_channels, COVID19_CLASSES, args.layers, criterion)
   model = model.cuda()
   logging.info("param size = %fMB", utils.count_parameters_in_MB(model))
   if args.is_parallel:
@@ -98,28 +101,12 @@ def main():
       momentum=args.momentum,
       weight_decay=args.weight_decay)
 
-  if args.is_cifar100:
-    train_transform, valid_transform = utils._data_transforms_cifar100(args)
-  else:
-    train_transform, valid_transform = utils._data_transforms_cifar10(args)
-  if args.is_cifar100:
-    train_data = dset.CIFAR100(root=args.data, train=True, download=True, transform=train_transform)
-  else:
-    train_data = dset.CIFAR10(root=args.data, train=True, download=True, transform=train_transform)
 
-  num_train = len(train_data)
-  indices = list(range(num_train))
-  split = int(np.floor(args.train_portion * num_train))
+  train_data = COVIDxDataset(mode='train', data_path=args.data)
+  valid_data = COVIDxDataset(mode='validate', data_path=args.data)
 
-  train_queue = torch.utils.data.DataLoader(
-      train_data, batch_size=args.batch_size,
-      sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[:split]),
-      pin_memory=False, num_workers=4)
-
-  valid_queue = torch.utils.data.DataLoader(
-      train_data, batch_size=args.batch_size,
-      sampler=torch.utils.data.sampler.SubsetRandomSampler(indices[split:num_train]),
-      pin_memory=False, num_workers=4)
+  train_queue = DataLoader(train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=2)
+  valid_queue = DataLoader(valid_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=2)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(
         optimizer, float(args.epochs), eta_min=args.learning_rate_min)
@@ -134,8 +121,8 @@ def main():
     genotype = model.genotype()
     logging.info('genotype = %s', genotype)
 
-    print(F.softmax(model.alphas_normal, dim=-1))
-    print(F.softmax(model.alphas_reduce, dim=-1))
+    # print(F.softmax(model.alphas_normal, dim=-1))
+    # print(F.softmax(model.alphas_reduce, dim=-1))
 
     # training
     train_acc, train_obj = train(train_queue, valid_queue, model, architect, criterion, optimizer, lr)
@@ -174,13 +161,13 @@ def train(train_queue, valid_queue, model, architect, criterion, optimizer, lr):
     nn.utils.clip_grad_norm_(model.parameters(), args.grad_clip)
     optimizer.step()
 
-    prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+    prec1, prec5 = utils.accuracy(logits, target, topk=(1, 3))
     objs.update(loss.item(), n)
     top1.update(prec1.item(), n)
     top5.update(prec5.item(), n)
 
     if step % args.report_freq == 0:
-      logging.info('train %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
+      logging.info('train %03d %e %f', step, objs.avg, top1.avg)
 
   return top1.avg, objs.avg
 
@@ -190,6 +177,7 @@ def infer(valid_queue, model, criterion):
   top1 = utils.AvgrageMeter()
   top5 = utils.AvgrageMeter()
   model.eval()
+
   with torch.no_grad():
     for step, (input, target) in enumerate(valid_queue):
         input = input.cuda()
@@ -198,14 +186,13 @@ def infer(valid_queue, model, criterion):
         logits = model(input)
         loss = criterion(logits, target)
 
-        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 5))
+        prec1, prec5 = utils.accuracy(logits, target, topk=(1, 3))
         n = input.size(0)
         objs.update(loss.item(), n)
         top1.update(prec1.item(), n)
-        top5.update(prec5.item(), n)
 
         if step % args.report_freq == 0:
-          logging.info('valid %03d %e %f %f', step, objs.avg, top1.avg, top5.avg)
+          logging.info('valid %03d %e %f', step, objs.avg, top1.avg)
 
   return top1.avg, objs.avg
 
