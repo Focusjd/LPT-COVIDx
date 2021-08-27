@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+sleep infinity
 screen -S exp
 bash
 nvidia-smi
