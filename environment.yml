@@ -3,7 +3,6 @@ dependencies:
   - cudatoolkit
   - pytorch
   - torchvision
-  - pydicom
   - tensorboard
   - tqdm
   - pandas
