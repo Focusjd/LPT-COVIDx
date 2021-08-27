@@ -113,10 +113,10 @@ def main():
 
 
   train_queue = torch.utils.data.DataLoader(
-      train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=0)
+      train_data, batch_size=args.batch_size, shuffle=True, pin_memory=True, num_workers=2)
 
   test_queue = torch.utils.data.DataLoader(
-      test_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=0)
+      test_data, batch_size=args.batch_size, shuffle=False, pin_memory=True, num_workers=2)
 
   scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, float(args.epochs))
   start_epoch = 0
