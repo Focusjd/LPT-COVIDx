@@ -6,6 +6,7 @@ from PIL import Image
 from torchvision import transforms
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
+from torchvision.transforms.transforms import RandomRotation
 
 
 
@@ -76,8 +77,9 @@ class COVIDxDataset(Dataset):
                 transforms.Resize(256),
                 transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
                 transforms.RandomHorizontalFlip(),
+                # transforms.RandomRotation(10),
                 transforms.ToTensor(),
-                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+                transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
             ])
         else:
             transform = transforms.Compose([
@@ -120,9 +122,11 @@ def main():
     # print(type(train_queue))
     # print(next(iter(train_queue))[1])
 
-    train_features, train_labels = next(iter(train_queue))
-    print(f"Feature batch shape: {train_features.size()}")
-    print(f"Labels batch shape: {train_labels.size()}")
+    # train_features, train_labels = next(iter(train_queue))
+    # print(f"Feature batch shape: {train_features.size()}")
+    # print(f"Labels batch shape: {train_labels.size()}")
+
+    train_features = train_data[9]
     img = train_features[0].squeeze().numpy().transpose(1,2,0)
     print(img.shape)
     plt.imshow(img)
