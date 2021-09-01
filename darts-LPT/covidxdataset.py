@@ -63,6 +63,7 @@ class COVIDxDataset(Dataset):
                 transforms.Resize(256),
                 transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
                 transforms.RandomHorizontalFlip(),
+                transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
@@ -92,6 +93,7 @@ def read_filepaths(file):
             labels.append(label)
     return paths, labels
 
+
 def main():
     batch_size = 32
 
@@ -107,9 +109,11 @@ def main():
     # print(type(train_queue))
     # print(next(iter(train_queue))[1])
 
-    train_features, train_labels = next(iter(train_queue))
-    print(f"Feature batch shape: {train_features.size()}")
-    print(f"Labels batch shape: {train_labels.size()}")
+    # train_features, train_labels = next(iter(train_queue))
+    # print(f"Feature batch shape: {train_features.size()}")
+    # print(f"Labels batch shape: {train_labels.size()}")
+
+    train_features = train_data[189]
     img = train_features[0].squeeze().numpy().transpose(1,2,0)
     print(img.shape)
     plt.imshow(img)
