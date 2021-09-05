@@ -20,7 +20,7 @@ class COVIDxDataset(Dataset):
     Code for reading the COVIDxDataset
     """
     def __init__(self, mode, data_path=ROOT,  dim=(224, 224)):
-
+        self.data_path = data_path
         self.root = os.path.join(data_path, mode, '')
         #  ROOT + '/' + mode + '/'
 
@@ -37,18 +37,31 @@ class COVIDxDataset(Dataset):
         elif (mode == 'test'):
             self.paths, self.labels = read_filepaths(index_path+testfile)
             self.do_augmentation =  False
+        elif (mode == 'eval_train'):
+            paths_train, labels_train = read_filepaths(index_path+trainfile)
+            paths_validate, labels_validate = read_filepaths(index_path+validatefile)
+            self.paths = paths_train + paths_validate
+            self.labels = labels_train + labels_validate
+            self.do_augmentation =  True
 
         print("{} examples =  {}".format(mode, len(self.paths)))
         self.mode = mode
-        
+
 
     def __len__(self):
         return len(self.paths)
 
     def __getitem__(self, index):
-
-        image_tensor = self.load_image(self.root + self.paths[index], self.dim, augmentation=self.mode)
-        label_tensor = torch.tensor(self.class_dict[self.labels[index]], dtype=torch.long)
+        if self.mode == 'eval_train':
+            if index<6500:
+                image_tensor = self.load_image(os.path.join(self.data_path, 'train', '')+ self.paths[index], self.dim, augmentation=self.mode)
+                label_tensor = torch.tensor(self.class_dict[self.labels[index]], dtype=torch.long)
+            else:
+                image_tensor = self.load_image(os.path.join(self.data_path, 'validate', '') + self.paths[index], self.dim, augmentation=self.mode)
+                label_tensor = torch.tensor(self.class_dict[self.labels[index]], dtype=torch.long)
+        else:    
+            image_tensor = self.load_image(self.root + self.paths[index], self.dim, augmentation=self.mode)
+            label_tensor = torch.tensor(self.class_dict[self.labels[index]], dtype=torch.long)
 
         return image_tensor, label_tensor
 
@@ -63,7 +76,6 @@ class COVIDxDataset(Dataset):
                 transforms.Resize(256),
                 transforms.RandomResizedCrop((224), scale=(0.5, 1.0)),
                 transforms.RandomHorizontalFlip(),
-                transforms.RandomAffine(degrees=(-10, 10), translate=(0.1, 0.1)),
                 transforms.ToTensor(),
                 transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
             ])
@@ -88,11 +100,10 @@ def read_filepaths(file):
         for i, line in enumerate(lines):
 
             path, label = line.split(' ')[1], line.split(' ')[2]
- 
+
             paths.append(path)
             labels.append(label)
     return paths, labels
-
 
 def main():
     batch_size = 32
@@ -109,11 +120,9 @@ def main():
     # print(type(train_queue))
     # print(next(iter(train_queue))[1])
 
-    # train_features, train_labels = next(iter(train_queue))
-    # print(f"Feature batch shape: {train_features.size()}")
-    # print(f"Labels batch shape: {train_labels.size()}")
-
-    train_features = train_data[189]
+    train_features, train_labels = next(iter(train_queue))
+    print(f"Feature batch shape: {train_features.size()}")
+    print(f"Labels batch shape: {train_labels.size()}")
     img = train_features[0].squeeze().numpy().transpose(1,2,0)
     print(img.shape)
     plt.imshow(img)
