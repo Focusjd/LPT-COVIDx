@@ -27,7 +27,7 @@ from torch.utils.tensorboard import SummaryWriter
 parser = argparse.ArgumentParser("LPT-covidx")
 parser.add_argument('--data', type=str, default='../data',
                     help='location of the data corpus')
-parser.add_argument('--batch_size', type=int, default=1, help='batch size')
+parser.add_argument('--batch_size', type=int, default=8, help='batch size')
 parser.add_argument('--learning_rate', type=float,
                     default=0.025, help='init learning rate')
 parser.add_argument('--learning_rate_min', type=float,
@@ -66,8 +66,8 @@ parser.add_argument('--arch_weight_decay', type=float,
                     default=1e-3, help='weight decay for arch encoding')
 
 # new hyperparams.
-parser.add_argument('--weight_gamma', type=float, default=0.8)
-parser.add_argument('--weight_lambda', type=float, default=0.8)
+parser.add_argument('--weight_gamma', type=float, default=0.5)
+parser.add_argument('--weight_lambda', type=float, default=0.5)
 parser.add_argument('--model_v_learning_rate', type=float, default=3e-4)
 parser.add_argument('--model_v_weight_decay', type=float, default=1e-3)
 parser.add_argument('--learning_rate_w', type=float, default=0.025)
