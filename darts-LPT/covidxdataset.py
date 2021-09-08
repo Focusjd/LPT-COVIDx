@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 
 
-ROOT = '/data'
+ROOT = '../data'
 trainfile = 'train_COVIDx_A.txt'
 validatefile = 'validate_COVIDx_A.txt'
 testfile = 'test_COVIDx_A.txt'
