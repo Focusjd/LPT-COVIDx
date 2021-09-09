@@ -66,8 +66,8 @@ parser.add_argument('--arch_weight_decay', type=float,
                     default=1e-3, help='weight decay for arch encoding')
 
 # new hyperparams.
-parser.add_argument('--weight_gamma', type=float, default=0.1)
-parser.add_argument('--weight_lambda', type=float, default=0.1)
+parser.add_argument('--weight_gamma', type=float, default=1)
+parser.add_argument('--weight_lambda', type=float, default=0.5)
 parser.add_argument('--model_v_learning_rate', type=float, default=3e-4)
 parser.add_argument('--model_v_weight_decay', type=float, default=1e-3)
 parser.add_argument('--learning_rate_w', type=float, default=0.025)
