@@ -60,9 +60,10 @@ parser.add_argument('--seed', type=int, default=2, help='random seed')
 # parser.add_argument('--arch', type=str, default="Genotype(normal=[('sep_conv_3x3', 1), ('dil_conv_5x5', 0), ('dil_conv_5x5', 0), ('dil_conv_3x3', 1), ('dil_conv_3x3', 0), ('max_pool_3x3', 1), ('sep_conv_5x5', 2), ('max_pool_3x3', 0)], normal_concat=range(2, 6), reduce=[('max_pool_3x3', 0), ('avg_pool_3x3', 1), ('max_pool_3x3', 0), ('max_pool_3x3', 2), ('max_pool_3x3', 0), ('dil_conv_5x5', 2), ('max_pool_3x3', 4), ('max_pool_3x3', 0)], reduce_concat=range(2, 6))", help='which architecture to use')
 
 # lpt 1-0.5 param
-parser.add_argument('--arch', type=str, default="Genotype(normal=[('max_pool_3x3', 0), ('max_pool_3x3', 1), ('dil_conv_3x3', 2), ('dil_conv_5x5', 1), ('sep_conv_5x5', 3), ('dil_conv_5x5', 2), ('sep_conv_3x3', 3), ('sep_conv_5x5', 0)], normal_concat=range(2, 6), reduce=[('sep_conv_5x5', 0), ('dil_conv_5x5', 1), ('avg_pool_3x3', 0), ('dil_conv_5x5', 2), ('avg_pool_3x3', 0), ('avg_pool_3x3', 2), ('dil_conv_5x5', 4), ('avg_pool_3x3', 0)], reduce_concat=range(2, 6))", help='which architecture to use')
-    
-    
+# parser.add_argument('--arch', type=str, default="Genotype(normal=[('max_pool_3x3', 0), ('max_pool_3x3', 1), ('dil_conv_3x3', 2), ('dil_conv_5x5', 1), ('sep_conv_5x5', 3), ('dil_conv_5x5', 2), ('sep_conv_3x3', 3), ('sep_conv_5x5', 0)], normal_concat=range(2, 6), reduce=[('sep_conv_5x5', 0), ('dil_conv_5x5', 1), ('avg_pool_3x3', 0), ('dil_conv_5x5', 2), ('avg_pool_3x3', 0), ('avg_pool_3x3', 2), ('dil_conv_5x5', 4), ('avg_pool_3x3', 0)], reduce_concat=range(2, 6))", help='which architecture to use')
+ 
+# lpt 1-0.1 param    
+parser.add_argument('--arch', type=str, default="Genotype(normal=[('sep_conv_3x3', 0), ('skip_connect', 1), ('dil_conv_3x3', 0), ('max_pool_3x3', 2), ('avg_pool_3x3', 0), ('skip_connect', 2), ('sep_conv_3x3', 4), ('sep_conv_5x5', 0)], normal_concat=range(2, 6), reduce=[('avg_pool_3x3', 0), ('skip_connect', 1), ('max_pool_3x3', 2), ('avg_pool_3x3', 0), ('sep_conv_5x5', 3), ('dil_conv_3x3', 0), ('dil_conv_5x5', 4), ('avg_pool_3x3', 0)], reduce_concat=range(2, 6))", help='which architecture to use')
     
 parser.add_argument('--grad_clip', type=float, default=5, help='gradient clipping')
 parser.add_argument('--resume', type=str, default='')
